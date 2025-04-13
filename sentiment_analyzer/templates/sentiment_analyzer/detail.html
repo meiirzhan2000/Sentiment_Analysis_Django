@@ -1,10 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'sentiment_analyzer/base.html' %}
+{% load sentiment_filters %}
+
+{% block title %}Analysis Detail{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Analysis Detail</h2>
+                <small>{{ analysis.created_at|date:"F d, Y H:i" }}</small>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h3 class="{% if analysis.sentiment == 'Positive' %}positive{% elif analysis.sentiment == 'Negative' %}negative{% else %}neutral{% endif %}">
+                        {{ analysis.sentiment }}
+                    </h3>
+                    
+                    <div class="mb-3">
+                        <strong>Polarity:</strong> {{ analysis.polarity|floatformat:2 }}
+                        <div class="progress">
+                            <div class="progress-bar 
+                                {% if analysis.polarity > 0 %}bg-success{% elif analysis.polarity < 0 %}bg-danger{% else %}bg-secondary{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ analysis.polarity|add:1|multiply:50 }}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">Range: -1 (very negative) to 1 (very positive)</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Subjectivity:</strong> {{ analysis.subjectivity|floatformat:2 }}
+                        <div class="progress">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ analysis.subjectivity|multiply:100 }}%"></div>
+                        </div>
+                        <small class="text-muted">Range: 0 (very objective) to 1 (very subjective)</small>
+                    </div>
+                    
+                    {% if analysis.source_url %}
+                        <div class="mb-3">
+                            <strong>Source URL:</strong>
+                            <a href="{{ analysis.source_url }}" target="_blank">{{ analysis.source_url }}</a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <h4>Analyzed Text</h4>
+                    <div class="p-3 bg-light rounded">
+                        <p>{{ analysis.text }}</p>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="{% url 'sentiment_analyzer:history' %}" class="btn btn-secondary">Back to History</a>
+                    <a href="{% url 'sentiment_analyzer:analyze' %}" class="btn btn-primary">New Analysis</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

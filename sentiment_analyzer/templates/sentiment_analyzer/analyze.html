@@ -1,10 +1,131 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'sentiment_analyzer/base.html' %}
+{% load sentiment_filters %}
+
+{% block title %}Analyze Text Sentiment{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h2>Analyze Text Sentiment</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        {{ form.text.label_tag }}
+                        {{ form.text }}
+                        {% if form.text.errors %}
+                            <div class="text-danger">{{ form.text.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.url.label_tag }}
+                        {{ form.url }}
+                        {% if form.url.errors %}
+                            <div class="text-danger">{{ form.url.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary">Analyze</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        {% if result %}
+            <div class="analysis-box">
+                <h3>Analysis Results</h3>
+                <hr>
+                <div class="mb-3">
+                    <strong>Sentiment:</strong>
+                    <span class="{% if result.sentiment == 'Positive' %}positive{% elif result.sentiment == 'Negative' %}negative{% else %}neutral{% endif %}">
+                        {{ result.sentiment }}
+                    </span>
+                </div>
+                <div class="mb-3">
+                    <strong>Polarity:</strong> {{ result.polarity|floatformat:2 }}
+                    <div class="progress">
+                        <div class="progress-bar
+                            {% if result.polarity > 0 %}bg-success{% elif result.polarity < 0 %}bg-danger{% else %}bg-secondary{% endif %}"
+                            role="progressbar"
+                            style="width: {{ result.polarity|add:1|multiply:50 }}%">
+                        </div>
+                    </div>
+                    <small class="text-muted">Range: -1 (very negative) to 1 (very positive)</small>
+                </div>
+                <div class="mb-3">
+                    <strong>Subjectivity:</strong> {{ result.subjectivity|floatformat:2 }}
+                    <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ result.subjectivity|multiply:100 }}%"></div>
+                    </div>
+                    <small class="text-muted">Range: 0 (very objective) to 1 (very subjective)</small>
+                </div>
+                <div class="mb-3">
+                    <strong>Text Analyzed:</strong>
+                    <p class="text-muted">{{ result.text|truncatechars:200 }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                Enter text or a URL to analyze sentiment
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if previous_analyses %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h3>Analysis Trends</h3>
+
+            <div class="row">
+                <div class="col-md-6">
+                    {% if line_chart %}
+                        <div class="visualization-box">
+                            <h4>Sentiment Polarity Over Time</h4>
+                            <img src="{{ line_chart }}" alt="Sentiment Trend Chart" class="img-fluid">
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    {% if donut_chart %}
+                        <div class="visualization-box">
+                            <h4>Sentiment Distribution</h4>
+                            <img src="{{ donut_chart }}" alt="Sentiment Distribution Chart" class="img-fluid">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h4>Recent Analyses</h4>
+                <div class="list-group">
+                    {% for analysis in previous_analyses|slice:":5" %}
+                        <a href="{% url 'sentiment_analyzer:detail' analysis.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1 {% if analysis.sentiment == 'Positive' %}positive{% elif analysis.sentiment == 'Negative' %}negative{% else %}neutral{% endif %}">
+                                    {{ analysis.sentiment }} ({{ analysis.polarity|floatformat:2 }})
+                                </h5>
+                                <small>{{ analysis.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                            <p class="mb-1">{{ analysis.text|truncatechars:100 }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'sentiment_analyzer:history' %}" class="btn btn-secondary mt-2">View All History</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
